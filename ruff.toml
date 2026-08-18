@@ -3,6 +3,7 @@ extend-exclude = [
     "tools/authors.py", # vendored from SciPy
     "tools/gh_lists.py", # vendored from SciPy with minor shims
     "docs",
+    "build",
 ]
 
 [format]

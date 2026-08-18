@@ -822,3 +822,99 @@ def test_gh_85_classifiers(hidden_layer_sizes, classifier):
     clf = classifier(hidden_layer_sizes=hidden_layer_sizes, seed=0)
     with pytest.raises(ValueError, match="must be > 0"):
         clf.fit(X, y)
+
+
+@pytest.mark.parametrize("""d_scaling,
+                             p_scaling,
+                             activation_scale,
+                             direct_links_scale,
+                             hidden_layer_sizes,
+                             classifier""", [
+    (True, True, 2.0, 1.0, (20, 20), GFDLClassifier),
+    (False, True, 2.0, 2.0, (10,), EnsembleGFDLClassifier),
+    (True, False, 2.0, 2.0, (10, 20), EnsembleGFDLClassifier),
+    (False, False, 1.0, 2.0, (10,), EnsembleGFDLClassifier),
+    (False, False, 2.0, 1.0, (10, 10), GFDLClassifier),
+    (True, True, 2.0, 1.0, (10,), GFDLClassifier)
+])
+def test_improper_scaling(d_scaling,
+                          p_scaling,
+                          activation_scale,
+                          direct_links_scale,
+                          hidden_layer_sizes, classifier):
+    # tests error handling if there is p_scaling for deep networks or any kind of
+    # scaling for Ensemble classifiers.
+    # Also makes sure partial_fit is never called when there is scaling.
+
+    # create a model
+    if classifier == EnsembleGFDLClassifier:
+        with pytest.raises(TypeError):
+            model = classifier(hidden_layer_sizes=hidden_layer_sizes,
+                                    activation_scale=activation_scale,
+                                    direct_links_scale=direct_links_scale,
+                                    d_scaling=d_scaling,
+                                    p_scaling=p_scaling)
+    else:
+        model = classifier(hidden_layer_sizes=hidden_layer_sizes,
+                                            activation_scale=activation_scale,
+                                            direct_links_scale=direct_links_scale,
+                                            d_scaling=d_scaling,
+                                            p_scaling=p_scaling)
+    X, y = make_classification(random_state=42)
+
+    if classifier == GFDLClassifier:
+        with pytest.raises(NotImplementedError):
+            model.fit(X, y)
+            model.partial_fit(X, y)
+
+
+@pytest.mark.parametrize("""d_scaling,
+                            p_scaling,
+                            activation_scale,
+                            direct_links_scale,
+                            expected_acc,
+                            expected_roc""", [
+    (True, True, 2.0, 0.5, 0.9388888888888889, 0.9899001046571259),
+    (True, True, 0.5, 2.0, 0.9388888888888889, 0.9899001046571259),
+    (False, False, 1.0, 2.0, 0.9361111111111111, 0.9879375349643886),
+    (False, False, 2.0, 1.0, 0.9361111111111111, 0.9879375349643886),
+    (True, False, 1.0, 1.0, 0.9388888888888889, 0.9899001046571259),
+    (False, True, 1.0, 1.0, 0.9361111111111111, 0.9879375349643886)
+])
+def test_scaling_classifier(d_scaling,
+                            p_scaling,
+                            activation_scale,
+                            direct_links_scale,
+                            expected_acc,
+                            expected_roc):
+    # Establishes baseline acc/roc values for scaled GFDLs
+    # for future regression tests
+
+    # Use the digits data set (copying the corresponding gamma scaling test)
+    data = load_digits()
+    X, y = data.data, data.target
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
+                                                        random_state=0)
+
+    scaler = StandardScaler()
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s = scaler.transform(X_test)
+
+    model = GFDLClassifier(hidden_layer_sizes=[100],
+                           activation="sigmoid",
+                           weight_scheme="he_normal",
+                           seed=0,
+                           d_scaling=d_scaling,
+                           p_scaling=p_scaling,
+                           activation_scale=activation_scale,
+                           direct_links_scale=direct_links_scale)
+    model.fit(X_train_s, y_train)
+
+    y_hat_cur = model.predict(X_test_s)
+    y_hat_cur_proba = model.predict_proba(X_test_s)
+
+    acc_cur = accuracy_score(y_test, y_hat_cur)
+    roc_cur = roc_auc_score(y_test, y_hat_cur_proba, multi_class="ovo")
+
+    np.testing.assert_allclose(acc_cur, expected_acc)
+    np.testing.assert_allclose(roc_cur, expected_roc)
