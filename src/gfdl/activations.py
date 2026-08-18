@@ -167,6 +167,37 @@ def log_softmax(z):
     """
     return scipy.special.log_softmax(z, axis=-1)
 
+def sign(z):
+    """
+    The sign function.
+
+    Parameters
+    ----------
+    z : array_like
+        Input array.
+
+    Returns
+    -------
+    numpy.ndarray
+        The output array values lying in {-1.0, 0.0, 1.0}.
+    """
+    return np.sign(z)
+
+def cbrt(z):
+    """
+    The sign function.
+
+    Parameters
+    ----------
+    z : array_like
+        Input array.
+
+    Returns
+    -------
+    numpy.ndarray
+        The output array values may be unbounded.
+    """
+    return np.cbrt(z)
 
 ACTIVATIONS = {
     "relu": relu,
@@ -178,6 +209,8 @@ ACTIVATIONS = {
     "softmin": softmin,
     "log_sigmoid": log_sigmoid,
     "log_softmax": log_softmax,
+    "sign": sign,
+    "cbrt": cbrt,
 }
 
 
