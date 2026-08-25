@@ -167,6 +167,7 @@ def log_softmax(z):
     """
     return scipy.special.log_softmax(z, axis=-1)
 
+
 def sign(z):
     """
     The sign function.
@@ -183,9 +184,10 @@ def sign(z):
     """
     return np.sign(z)
 
+
 def cbrt(z):
     """
-    The sign function.
+    The cube root function.
 
     Parameters
     ----------
@@ -198,6 +200,7 @@ def cbrt(z):
         The output array values may be unbounded.
     """
     return np.cbrt(z)
+
 
 ACTIVATIONS = {
     "relu": relu,
