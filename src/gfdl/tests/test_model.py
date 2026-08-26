@@ -824,87 +824,103 @@ def test_gh_85_classifiers(hidden_layer_sizes, classifier):
         clf.fit(X, y)
 
 
-@pytest.mark.parametrize("""d_scaling,
-                             p_scaling,
-                             activation_scale,
-                             direct_links_scale,
-                             hidden_layer_sizes,
-                             classifier""", [
-    (True, True, 2.0, 1.0, (20, 20), GFDLClassifier),
-    (False, True, 2.0, 2.0, (10,), EnsembleGFDLClassifier),
-    (True, False, 2.0, 2.0, (10, 20), EnsembleGFDLClassifier),
-    (False, False, 1.0, 2.0, (10,), EnsembleGFDLClassifier),
-    (False, False, 2.0, 1.0, (10, 10), GFDLClassifier),
-    (True, True, 2.0, 1.0, (10,), GFDLClassifier)
+@pytest.mark.parametrize("""p_scaling,
+                            activation_scale,
+                            direct_links_scale,
+                            hidden_layer_sizes,
+                            classifier,
+                            random_state""", [
+    (True, 1.0, 1.0, (20, 20), GFDLClassifier, 42),
+    (True, 2.0, 2.0, (10,), EnsembleGFDLClassifier, 42),
+    (False, 2.0, 1.0, (10, 10), GFDLClassifier, 42),
+    (True, 1.0, 2.0, (10,), GFDLClassifier, 42),
+    (True, -1.0, 2.0, (10,), GFDLClassifier, 42),
+    (True, 1.0, -1.0, (10,), GFDLClassifier, 42)
 ])
-def test_improper_scaling(d_scaling,
-                          p_scaling,
+def test_improper_scaling(p_scaling,
                           activation_scale,
                           direct_links_scale,
-                          hidden_layer_sizes, classifier):
+                          hidden_layer_sizes,
+                          classifier,
+                          random_state):
     # tests error handling if there is p_scaling for deep networks or any kind of
     # scaling for Ensemble classifiers.
-    # Also makes sure partial_fit is never called when there is scaling.
+    # Makes sure partial_fit is never called when there is scaling.
+    # Also checks that activation_scale and direct_links_scale are non-negative
 
-    # create a model
     if classifier == EnsembleGFDLClassifier:
-        with pytest.raises(TypeError):
+        # Any attempt to run with new scaling arguments should return an error
+
+        # Separated into multiple tests because Type Error is only raised for
+        # the first incorrect argument
+        Errstr1 = "unexpected keyword argument 'activation_scale'"
+        with pytest.raises(TypeError, match=Errstr1):
             model = classifier(hidden_layer_sizes=hidden_layer_sizes,
-                                    activation_scale=activation_scale,
-                                    direct_links_scale=direct_links_scale,
-                                    d_scaling=d_scaling,
-                                    p_scaling=p_scaling)
+                               activation_scale=activation_scale)
+
+        Errstr2 = "unexpected keyword argument 'direct_links_scale'"
+        with pytest.raises(TypeError, match=Errstr2):
+            model = classifier(hidden_layer_sizes=hidden_layer_sizes,
+                               direct_links_scale=direct_links_scale)
+
+        Errstr3 = "unexpected keyword argument 'p_scaling'"
+        with pytest.raises(TypeError, match=Errstr3):
+            model = classifier(hidden_layer_sizes=hidden_layer_sizes,
+                               p_scaling=p_scaling)
+
     else:
         model = classifier(hidden_layer_sizes=hidden_layer_sizes,
-                                            activation_scale=activation_scale,
-                                            direct_links_scale=direct_links_scale,
-                                            d_scaling=d_scaling,
-                                            p_scaling=p_scaling)
-    X, y = make_classification(random_state=42)
+                           activation_scale=activation_scale,
+                           direct_links_scale=direct_links_scale,
+                           p_scaling=p_scaling)
+        X, y = make_classification(random_state=random_state)
 
-    if classifier == GFDLClassifier:
-        with pytest.raises(NotImplementedError):
-            model.fit(X, y)
-            model.partial_fit(X, y)
+        if (activation_scale < 0.0) or (direct_links_scale < 0.0):
+            with pytest.raises(ValueError, match="Negative scaling parameters."):
+                model.fit(X, y)
+
+        with pytest.raises(NotImplementedError, match="Scaling has not been "
+                                                      "implemented for partial fit."):
+            classes = np.unique(y)
+            model.partial_fit(X, y, classes=classes)
 
 
-@pytest.mark.parametrize("""d_scaling,
-                            p_scaling,
+@pytest.mark.parametrize("""p_scaling,
                             activation_scale,
                             direct_links_scale,
                             expected_acc,
-                            expected_roc""", [
-    (True, True, 2.0, 0.5, 0.9388888888888889, 0.9899001046571259),
-    (True, True, 0.5, 2.0, 0.9388888888888889, 0.9899001046571259),
-    (False, False, 1.0, 2.0, 0.9361111111111111, 0.9879375349643886),
-    (False, False, 2.0, 1.0, 0.9361111111111111, 0.9879375349643886),
-    (True, False, 1.0, 1.0, 0.9388888888888889, 0.9899001046571259),
-    (False, True, 1.0, 1.0, 0.9361111111111111, 0.9879375349643886)
+                            expected_roc,
+                            random_state""", [
+    (True, 2.0, 0.5, 0.975, 0.998168356, 42),
+    (True, 0.5, 2.0, 0.975, 0.998122724, 42),
+    (False, 1.0, 5.0, 0.975, 0.998166560, 42),
+    (False, 10.0, 1.0, 0.975, 0.998166560, 42),
+    (False, 1.0, 1.0, 0.975, 0.998166560, 42),
+    (True, 1.0, 1.0, 0.975, 0.998172636, 42)
 ])
-def test_scaling_classifier(d_scaling,
-                            p_scaling,
+def test_scaling_classifier(p_scaling,
                             activation_scale,
                             direct_links_scale,
                             expected_acc,
-                            expected_roc):
+                            expected_roc,
+                            random_state):
     # Establishes baseline acc/roc values for scaled GFDLs
-    # for future regression tests
 
-    # Use the digits data set (copying the corresponding gamma scaling test)
+    # Use the digits data set
     data = load_digits()
     X, y = data.data, data.target
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
-                                                        random_state=0)
+                                                        random_state=random_state)
 
     scaler = StandardScaler()
     X_train_s = scaler.fit_transform(X_train)
     X_test_s = scaler.transform(X_test)
 
     model = GFDLClassifier(hidden_layer_sizes=[100],
-                           activation="sigmoid",
-                           weight_scheme="he_normal",
-                           seed=0,
-                           d_scaling=d_scaling,
+                           activation="relu",
+                           weight_scheme="normal",
+                           seed=random_state,
+                           reg_alpha=1.0,
                            p_scaling=p_scaling,
                            activation_scale=activation_scale,
                            direct_links_scale=direct_links_scale)
