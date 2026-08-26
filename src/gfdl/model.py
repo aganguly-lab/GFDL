@@ -366,10 +366,23 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         model uses direct solve using Moore-Penrose Pseudo-Inverse.
 
     rtol : float, default=None
-      Cutoff for small singular values for the Moore-Penrose
-      pseudo-inverse. Only applies when ``reg_alpha=None``.
-      When ``rtol=None``, the array API standard default for
-      ``pinv`` is used.
+        Cutoff for small singular values for the Moore-Penrose
+        pseudo-inverse. Only applies when ``reg_alpha=None``.
+        When ``rtol=None``, the array API standard default for
+        ``pinv`` is used.
+
+    p_scaling : bool, default=False
+        If true, the activation function is divided by a factor of 
+        the square root of the size of the hidden-layers. Only implemented
+        for single-layer RVFLs or ELMs.
+
+    activation_scaling: float, default=1.0
+        The activation function is multiplied by the squareroot of activation_scaling.
+
+    direct_links_scaling: float, default=1.0
+        The direct links terms of the design matrix are multiplied by a factor of
+        the squareroot of direct_links_scaling. Does nothing if direct_links is 
+        set to False.
 
     Attributes
     ----------
