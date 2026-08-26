@@ -372,7 +372,7 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         ``pinv`` is used.
 
     p_scaling : bool, default=False
-        If true, the activation function is divided by a factor of 
+        If true, the activation function is divided by a factor of
         the square root of the size of the hidden-layers. Only implemented
         for single-layer RVFLs or ELMs.
 
@@ -381,7 +381,7 @@ class GFDLClassifier(ClassifierMixin, GFDL):
 
     direct_links_scale : float, default=1.0
         The direct links terms of the design matrix are multiplied by a factor of
-        the squareroot of direct_links_scaling. Does nothing if direct_links is 
+        the squareroot of direct_links_scaling. Does nothing if direct_links is
         set to False.
 
     Attributes
