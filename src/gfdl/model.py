@@ -34,7 +34,6 @@ class GFDL(BaseEstimator):
         seed: int | None = None,
         reg_alpha: float | None = None,
         rtol: float | None = None,
-        d_scaling: bool = False,
         p_scaling: bool = False,
         activation_scale: float = 1.0,
         direct_links_scale: float = 1.0
@@ -46,7 +45,6 @@ class GFDL(BaseEstimator):
         self.weight_scheme = weight_scheme
         self.reg_alpha = reg_alpha
         self.rtol = rtol
-        self.d_scaling = d_scaling
         self.p_scaling = p_scaling
         self.activation_scale = activation_scale
         self.direct_links_scale = direct_links_scale
@@ -62,17 +60,15 @@ class GFDL(BaseEstimator):
             raise ValueError("hidden_layer_sizes must be > 0, "
                              f"got {hidden_layer_sizes}")
         if hidden_layer_sizes.size > 1 and self.p_scaling:
-            raise NotImplementedError("""p-scaling for deep networks
-                                         has not been implemented""")
+            raise NotImplementedError("p-scaling is only implemented "
+                                      "for models with 1 hidden layer")
+        if (self.activation_scale < 0.0) or (self.direct_links_scale < 0.0):
+            raise ValueError("Negative scaling parameters. "
+                             "All scaling parameters must be positive.")
         fn = resolve_activation(self.activation)[1]
         self._activation_fn = fn
         self._N = X.shape[1]
         self._weight_mode = resolve_weight(self.weight_scheme)
-        # Establish d scaling
-        if self.d_scaling:
-            X_eff = X / np.sqrt(self._N)
-        else:
-            X_eff = X
 
         # weights shape: (n_layers,)
         # biases shape: (n_layers,)
@@ -101,7 +97,7 @@ class GFDL(BaseEstimator):
 
         # hypothesis space shape: (n_layers,)
         Hs = []
-        H_prev = X_eff
+        H_prev = X
         # If self.pscaling, then the below loop should run at most once.
         for w, b in zip(self.W_, self.b_, strict=False):
             Z = H_prev @ w.T + b  # (n_samples, n_hidden)
@@ -115,7 +111,7 @@ class GFDL(BaseEstimator):
         # design matrix shape: (n_samples, sum_hidden+n_features)
         # or (n_samples, sum_hidden)
         if self.direct_links:
-            Hs.append(X_eff * np.sqrt(self.direct_links_scale))
+            Hs.append(X * np.sqrt(self.direct_links_scale))
         D = np.hstack(Hs)
 
         # beta shape: (sum_hidden+n_features, n_classes-1)
@@ -161,11 +157,11 @@ class GFDL(BaseEstimator):
         # Y shape: (n_samples, n_classes-1)
         # scaling not implemented
         if (self.p_scaling
-            or not np.isclose(self.activation_scale, 1.0)
-            or not np.isclose(self.direct_links_scale, 1.0)
+            or (self.activation_scale != 1.0)
+            or (self.direct_links_scale != 1.0)
         ):
-            raise NotImplementedError("""Scaling has not been
-                                         implemented for partial fit.""")
+            raise NotImplementedError("Scaling has not been "
+                                      "implemented for partial fit.")
 
         if not hasattr(self, "W_"):
             # initialize params only on first call
@@ -259,15 +255,12 @@ class GFDL(BaseEstimator):
         check_is_fitted(self)
         hidden_layer_sizes = np.asarray(self.hidden_layer_sizes)
         Hs = []
-        if self.d_scaling:
-            H_prev = X / np.sqrt(X.shape[1])
-        else:
-            H_prev = X
+        H_prev = X
 
         for W, b in zip(self.W_, self.b_, strict=False):
             Z = H_prev @ W.T + b  # (n, m)
             # (implementation) if p_scaling,
-            # then the network is shallow and this loop runs only once
+            # then the network has only one hidden layer, so the loop runs only once.
             if self.p_scaling:
                 H_prev = self._activation_fn(Z) * np.sqrt(self.activation_scale)
                 H_prev = H_prev / np.sqrt(hidden_layer_sizes[0])
@@ -276,10 +269,8 @@ class GFDL(BaseEstimator):
             Hs.append(H_prev)
 
         if self.direct_links:
-            if self.d_scaling:
-                Hs.append(X / np.sqrt(X.shape[1]) * np.sqrt(self.direct_links_scale))
-            else:
-                Hs.append(X * np.sqrt(self.direct_links_scale))
+            Hs.append(X * np.sqrt(self.direct_links_scale))
+
         D = np.hstack(Hs)
         out = D @ self.coeff_
 
@@ -426,22 +417,20 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         seed: int | None = None,
         reg_alpha: float | None = None,
         rtol: float | None = None,
-        d_scaling: bool = False,
         p_scaling: bool = False,
         activation_scale: float = 1.0,
         direct_links_scale: float = 1.0
     ):
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,
-                       activation=activation,
-                       weight_scheme=weight_scheme,
-                       direct_links=direct_links,
-                       seed=seed,
-                       reg_alpha=reg_alpha,
-                       rtol=rtol,
-                       d_scaling=d_scaling,
-                       p_scaling=p_scaling,
-                       activation_scale=activation_scale,
-                       direct_links_scale=direct_links_scale)
+                         activation=activation,
+                         weight_scheme=weight_scheme,
+                         direct_links=direct_links,
+                         seed=seed,
+                         reg_alpha=reg_alpha,
+                         rtol=rtol,
+                         p_scaling=p_scaling,
+                         activation_scale=activation_scale,
+                         direct_links_scale=direct_links_scale)
 
     def fit(self, X, y):
         """
