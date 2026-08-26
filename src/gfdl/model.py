@@ -376,10 +376,10 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         the square root of the size of the hidden-layers. Only implemented
         for single-layer RVFLs or ELMs.
 
-    activation_scaling: float, default=1.0
+    activation_scale : float, default=1.0
         The activation function is multiplied by the squareroot of activation_scaling.
 
-    direct_links_scaling: float, default=1.0
+    direct_links_scale : float, default=1.0
         The direct links terms of the design matrix are multiplied by a factor of
         the squareroot of direct_links_scaling. Does nothing if direct_links is 
         set to False.
