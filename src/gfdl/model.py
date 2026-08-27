@@ -315,6 +315,10 @@ class GFDLClassifier(ClassifierMixin, GFDL):
 
         - 'log_softmax': :func:`log_softmax <gfdl.activations.log_softmax>`.
 
+        - 'sign': :func:`sign <gfdl.activations.sign>`.
+
+        - 'cbrt': :func:`cbrt <gfdl.activations.cbrt>`.
+
     weight_scheme : str, default='uniform'
         Distribution used to initialize the random hidden-layer weights.
 
@@ -816,6 +820,10 @@ class EnsembleGFDLClassifier(ClassifierMixin, EnsembleGFDL):
         - 'log_sigmoid': :func:`log_sigmoid <gfdl.activations.log_sigmoid>`.
 
         - 'log_softmax': :func:`log_softmax <gfdl.activations.log_softmax>`.
+
+        - 'sign': :func:`sign <gfdl.activations.sign>`.
+        
+        - 'cbrt': :func:`cbrt <gfdl.activations.cbrt>`.
 
     weight_scheme : str, default='uniform'
         Distribution used to initialize the random hidden-layer weights.
