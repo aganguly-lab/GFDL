@@ -31,8 +31,8 @@ class GFDL(BaseEstimator):
         activation: str = "identity",
         weight_scheme: str = "uniform",
         direct_links: bool = True,
-        seed: int | None = None,
-        reg_alpha: float | None = None,
+        seed: int = None,
+        reg_alpha: float = None,
         rtol: float | None = None,
         p_scaling: bool = False,
         activation_scale: float = 1.0,
@@ -366,10 +366,10 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         model uses direct solve using Moore-Penrose Pseudo-Inverse.
 
     rtol : float, default=None
-        Cutoff for small singular values for the Moore-Penrose
-        pseudo-inverse. Only applies when ``reg_alpha=None``.
-        When ``rtol=None``, the array API standard default for
-        ``pinv`` is used.
+      Cutoff for small singular values for the Moore-Penrose
+      pseudo-inverse. Only applies when ``reg_alpha=None``.
+      When ``rtol=None``, the array API standard default for
+      ``pinv`` is used.
 
     p_scaling : bool, default=False
         If true, the activation function is divided by a factor of
@@ -377,11 +377,11 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         for single-layer RVFLs or ELMs.
 
     activation_scale : float, default=1.0
-        The activation function is multiplied by the squareroot of activation_scaling.
+        The activation function is multiplied by the square root of activation_scaling.
 
     direct_links_scale : float, default=1.0
         The direct links terms of the design matrix are multiplied by a factor of
-        the squareroot of direct_links_scaling. Does nothing if direct_links is
+        the square root of direct_links_scaling. Does nothing if direct_links is
         set to False.
 
     Attributes
@@ -427,9 +427,9 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         activation: str = "identity",
         weight_scheme: str = "uniform",
         direct_links: bool = True,
-        seed: int | None = None,
-        reg_alpha: float | None = None,
-        rtol: float | None = None,
+        seed: int = None,
+        reg_alpha: float = None,
+        rtol: float = None,
         p_scaling: bool = False,
         activation_scale: float = 1.0,
         direct_links_scale: float = 1.0
@@ -598,8 +598,8 @@ class EnsembleGFDL(BaseEstimator):
         hidden_layer_sizes: np.typing.ArrayLike = (100,),
         activation: str = "identity",
         weight_scheme: str = "uniform",
-        seed: int | None = None,
-        reg_alpha: float | None = None,
+        seed: int = None,
+        reg_alpha: float = None,
         rtol: float | None = None,
     ):
         self.hidden_layer_sizes = hidden_layer_sizes
@@ -896,9 +896,9 @@ class EnsembleGFDLClassifier(ClassifierMixin, EnsembleGFDL):
         hidden_layer_sizes: np.typing.ArrayLike = (100,),
         activation: str = "identity",
         weight_scheme: str = "uniform",
-        seed: int | None = None,
-        reg_alpha: float | None = None,
-        rtol: float | None = None,
+        seed: int = None,
+        reg_alpha: float = None,
+        rtol: float = None,
         voting: str = "soft",    # "soft" or "hard"
     ):
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,
@@ -1216,8 +1216,8 @@ class GFDLRegressor(RegressorMixin, MultiOutputMixin, GFDL):
         activation: str = "identity",
         weight_scheme: str = "uniform",
         direct_links: bool = True,
-        seed: int | None = None,
-        reg_alpha: float | None = None,
+        seed: int = None,
+        reg_alpha: float = None,
         rtol: float | None = None,
     ):
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,
