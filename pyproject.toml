@@ -43,11 +43,19 @@ where = ["src"]
 gfdl = ["testdata/**/*"]
 
 
-[project.optional-dependencies]
-test = [
+[dependency-groups]
+testing = [
     "ucimlrepo",
     "pytest",
     "pytest-cov",
+]
+
+linting = [
+    "ruff==0.15.0",
+    "numpydoc",
+    "sphinx_copybutton",
+    "sphinx_design",
+    "pydata_sphinx_theme",
 ]
 
 [tool.numpydoc_validation]
