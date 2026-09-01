@@ -42,14 +42,12 @@ where = ["src"]
 [tool.setuptools.package-data]
 gfdl = ["testdata/**/*"]
 
-
 [dependency-groups]
 testing = [
     "ucimlrepo",
     "pytest",
     "pytest-cov",
 ]
-
 linting = [
     "ruff==0.15.0",
     "numpydoc",
