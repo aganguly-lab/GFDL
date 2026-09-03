@@ -43,14 +43,6 @@ where = ["src"]
 gfdl = ["testdata/**/*"]
 
 [dependency-groups]
-build = [
-    "setuptools>=69",
-    "wheel",
-    "numpy>=2.0.0",
-    "scikit-learn>=1.5.0",
-    "scipy>=1.13.0",
-    "packaging>=24.0",
-]
 testing = [
     "ucimlrepo",
     "pytest",
@@ -58,10 +50,6 @@ testing = [
 ]
 linting = [
     "ruff==0.15.0",
-    "numpydoc",
-    "sphinx_copybutton",
-    "sphinx_design",
-    "pydata_sphinx_theme",
 ]
 doc = [
     "numpydoc",
@@ -70,7 +58,6 @@ doc = [
     "pydata_sphinx_theme",
 ]
 dev = [
-    { include-group = "build" },
     { include-group = "testing" },
     { include-group = "linting" },
     { include-group = "doc"},
