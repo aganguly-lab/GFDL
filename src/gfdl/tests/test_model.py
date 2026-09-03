@@ -824,64 +824,79 @@ def test_gh_85_classifiers(hidden_layer_sizes, classifier):
         clf.fit(X, y)
 
 
-@pytest.mark.parametrize("""p_scaling,
-                            activation_scale,
-                            direct_links_scale,
-                            hidden_layer_sizes,
-                            classifier,
-                            random_state""", [
-    (True, 1.0, 1.0, (20, 20), GFDLClassifier, 42),
-    (True, 2.0, 2.0, (10,), EnsembleGFDLClassifier, 42),
-    (False, 2.0, 1.0, (10, 10), GFDLClassifier, 42),
-    (True, 1.0, 2.0, (10,), GFDLClassifier, 42),
-    (True, -1.0, 2.0, (10,), GFDLClassifier, 42),
-    (True, 1.0, -1.0, (10,), GFDLClassifier, 42)
+@pytest.mark.parametrize("p_scaling, activation_scale, direct_links_scale", [
+    (True, None, None),
+    (False, 1.0, None),
+    (False, None, 1.0)
 ])
-def test_improper_scaling(p_scaling,
-                          activation_scale,
-                          direct_links_scale,
-                          hidden_layer_sizes,
-                          classifier,
-                          random_state):
-    # tests error handling if there is p_scaling for deep networks or any kind of
-    # scaling for Ensemble classifiers.
+def test_improper_non_Classifier_scaling(p_scaling,
+                                         activation_scale,
+                                         direct_links_scale,
+                                         classifier=EnsembleGFDLClassifier,
+                                         hidden_layer_sizes=(10,)):
+    if p_scaling:
+        Errstr1 = "unexpected keyword argument 'p_scaling'"
+        with pytest.raises(TypeError, match=Errstr1):
+            classifier(hidden_layer_sizes=hidden_layer_sizes,
+                       p_scaling=p_scaling)
+    if activation_scale is not None:
+        Errstr2 = "unexpected keyword argument 'activation_scale'"
+        with pytest.raises(TypeError, match=Errstr2):
+            classifier(hidden_layer_sizes=hidden_layer_sizes,
+                       activation_scale=activation_scale)
+    if direct_links_scale is not None:
+        Errstr3 = "unexpected keyword argument 'direct_links_scale'"
+        with pytest.raises(TypeError, match=Errstr3):
+            classifier(hidden_layer_sizes=hidden_layer_sizes,
+                       direct_links_scale=direct_links_scale)
+
+
+@pytest.mark.parametrize("p_scaling", [True, False])
+@pytest.mark.parametrize("activation_scale", [-1.0, 1.0, 2.0, None])
+@pytest.mark.parametrize("direct_links_scale", [-1.0, 1.0, 2.0, None])
+@pytest.mark.parametrize("fit_first", [True, False])
+def test_improper_Classifier_scaling(p_scaling,
+                                     activation_scale,
+                                     direct_links_scale,
+                                     fit_first,
+                                     classifier=GFDLClassifier,
+                                     hidden_layer_sizes=(10,),
+                                     random_state=42):
     # Makes sure partial_fit is never called when there is scaling.
     # Also checks that activation_scale and direct_links_scale are non-negative
 
-    if classifier == EnsembleGFDLClassifier:
-        # Any attempt to run with new scaling arguments should return an error
+    # NOTE:: if activation_scale or direct_links_scale is set to None,
+    # then classifier is implemented as if activation_scale or direct_links_scale
+    # was omitted.
+    model = classifier(hidden_layer_sizes=hidden_layer_sizes,
+                       activation_scale=activation_scale,
+                       direct_links_scale=direct_links_scale,
+                       p_scaling=p_scaling)
+    X, y = make_classification(random_state=random_state)
 
-        # Separated into multiple tests because Type Error is only raised for
-        # the first incorrect argument
-        Errstr1 = "unexpected keyword argument 'activation_scale'"
-        with pytest.raises(TypeError, match=Errstr1):
-            model = classifier(hidden_layer_sizes=hidden_layer_sizes,
-                               activation_scale=activation_scale)
+    # for convenience, define effective scales
+    eff_activation_scale = 1.0 if activation_scale is None else activation_scale
+    eff_direct_links_scale = 1.0 if direct_links_scale is None else direct_links_scale
 
-        Errstr2 = "unexpected keyword argument 'direct_links_scale'"
-        with pytest.raises(TypeError, match=Errstr2):
-            model = classifier(hidden_layer_sizes=hidden_layer_sizes,
-                               direct_links_scale=direct_links_scale)
+    if eff_activation_scale < 0.0 or eff_direct_links_scale < 0.0:
+        with pytest.raises(ValueError, match="Negative scaling parameters."):
+            model.fit(X, y)
 
-        Errstr3 = "unexpected keyword argument 'p_scaling'"
-        with pytest.raises(TypeError, match=Errstr3):
-            model = classifier(hidden_layer_sizes=hidden_layer_sizes,
-                               p_scaling=p_scaling)
+    # To check that error handling for partial_fit works whether or not
+    # fit is called before partial_fit. Also make sure fit passes without
+    # error.
+    # Of course, we also have to check that the scales are non-negative
+    if fit_first and eff_activation_scale >= 0.0 and eff_direct_links_scale >= 0.0:
+        model.fit(X, y)
 
-    else:
-        model = classifier(hidden_layer_sizes=hidden_layer_sizes,
-                           activation_scale=activation_scale,
-                           direct_links_scale=direct_links_scale,
-                           p_scaling=p_scaling)
-        X, y = make_classification(random_state=random_state)
-
-        if (activation_scale < 0.0) or (direct_links_scale < 0.0):
-            with pytest.raises(ValueError, match="Negative scaling parameters."):
-                model.fit(X, y)
-
+    # If not p_scaling and both activation_scale and direct_links_scale are None,
+    # and if not fit_first, then the test passes for free. Not sure of the best
+    # way to handle that case.
+    if p_scaling or (activation_scale is not None) or (direct_links_scale is not None):
         classes = np.unique(y)
-        with pytest.raises(NotImplementedError, match="Scaling has not been "
-                                                      "implemented for partial fit."):
+        with pytest.raises(NotImplementedError,
+                           match="Scaling has not been "
+                                 "implemented for partial fit."):
             model.partial_fit(X, y, classes=classes)
 
 
