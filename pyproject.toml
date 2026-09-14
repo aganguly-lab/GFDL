@@ -43,12 +43,13 @@ where = ["src"]
 gfdl = ["testdata/**/*"]
 
 [dependency-groups]
-testing = [
+test = [
     "ucimlrepo",
-    "pytest",
+    "pytest==9.1.1",
     "pytest-cov",
+    "pytest-xdist",
 ]
-linting = [
+lint = [
     "ruff==0.15.0",
 ]
 doc = [
@@ -58,8 +59,8 @@ doc = [
     "pydata_sphinx_theme",
 ]
 dev = [
-    { include-group = "testing" },
-    { include-group = "linting" },
+    { include-group = "test" },
+    { include-group = "lint" },
     { include-group = "doc"},
 ]
 
