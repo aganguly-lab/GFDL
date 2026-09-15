@@ -42,12 +42,26 @@ where = ["src"]
 [tool.setuptools.package-data]
 gfdl = ["testdata/**/*"]
 
-
-[project.optional-dependencies]
+[dependency-groups]
 test = [
     "ucimlrepo",
-    "pytest",
+    "pytest==9.1.1",
     "pytest-cov",
+    "pytest-xdist",
+]
+lint = [
+    "ruff==0.15.0",
+]
+doc = [
+    "numpydoc",
+    "sphinx_copybutton",
+    "sphinx_design",
+    "pydata_sphinx_theme",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "doc"},
 ]
 
 [tool.numpydoc_validation]
