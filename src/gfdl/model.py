@@ -170,7 +170,6 @@ class GFDL(BaseEstimator):
         # X shape: (n_samples, n_features)
         # Y shape: (n_samples, n_classes-1)
 
-        # scaling not implemented.
         if (self.p_scaling
             or (self.activation_scale is not None)
             or (self.direct_links_scale is not None)
