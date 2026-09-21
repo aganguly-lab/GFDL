@@ -855,12 +855,13 @@ def test_improper_non_Classifier_scaling(p_scaling,
 @pytest.mark.parametrize("activation_scale", [-1.0, 1.0, 2.0, None])
 @pytest.mark.parametrize("direct_links_scale", [-1.0, 1.0, 2.0, None])
 @pytest.mark.parametrize("fit_first", [True, False])
+@pytest.mark.parametrize("hidden_layer_sizes", [(10,), (10, 10)])
 def test_improper_Classifier_scaling(p_scaling,
                                      activation_scale,
                                      direct_links_scale,
                                      fit_first,
+                                     hidden_layer_sizes,
                                      classifier=GFDLClassifier,
-                                     hidden_layer_sizes=(10,),
                                      random_state=42):
     # Makes sure partial_fit is never called when there is scaling.
     # Also checks that activation_scale and direct_links_scale are non-negative
@@ -868,6 +869,9 @@ def test_improper_Classifier_scaling(p_scaling,
     # NOTE:: if activation_scale or direct_links_scale is set to None,
     # then classifier is implemented as if activation_scale or direct_links_scale
     # was omitted.
+
+    num_layers = len(hidden_layer_sizes)
+
     model = classifier(hidden_layer_sizes=hidden_layer_sizes,
                        activation_scale=activation_scale,
                        direct_links_scale=direct_links_scale,
@@ -878,25 +882,28 @@ def test_improper_Classifier_scaling(p_scaling,
     eff_activation_scale = 1.0 if activation_scale is None else activation_scale
     eff_direct_links_scale = 1.0 if direct_links_scale is None else direct_links_scale
 
-    if eff_activation_scale < 0.0 or eff_direct_links_scale < 0.0:
+    # If num_layers > 1 and p_scaling, then model.fit immediately calls an error
+    # If model.fit survives the first check, then it will throw an error if either
+    # scaling factor is negative. Otherwise, it is expected to run without error.
+    # fit_first is set to True if we want to test partial_fit behavior after
+    # fit has been called.
+    if p_scaling and num_layers > 1:
+        with pytest.raises(NotImplementedError, match=r"p-scaling is only implemented"):
+            model.fit(X, y)
+    elif eff_activation_scale < 0.0 or eff_direct_links_scale < 0.0:
         with pytest.raises(ValueError, match="Negative scaling parameters."):
             model.fit(X, y)
-
-    # To check that error handling for partial_fit works whether or not
-    # fit is called before partial_fit. Also make sure fit passes without
-    # error.
-    # Of course, we also have to check that the scales are non-negative
-    if fit_first and eff_activation_scale >= 0.0 and eff_direct_links_scale >= 0.0:
+    elif fit_first:
         model.fit(X, y)
 
-    # If not p_scaling and both activation_scale and direct_links_scale are None,
-    # and if not fit_first, then the test passes for free. Not sure of the best
-    # way to handle that case.
-    if p_scaling or (activation_scale is not None) or (direct_links_scale is not None):
+    if (model.p_scaling
+        or (model.activation_scale is not None)
+        or (model.direct_links_scale is not None)
+    ):
         classes = np.unique(y)
         with pytest.raises(NotImplementedError,
-                           match="Scaling has not been "
-                                 "implemented for partial fit."):
+                            match="Scaling has not been "
+                            "implemented for partial fit."):
             model.partial_fit(X, y, classes=classes)
 
 
