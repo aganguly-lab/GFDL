@@ -277,11 +277,13 @@ class GFDL(BaseEstimator):
         H_prev = X
         for W, b in zip(self.W_, self.b_, strict=False):
             Z = H_prev @ W.T + b  # (n, m)
-            # Current implementation: if p_scaling,
-            # then the network has only one hidden layer, so the loop runs only once.
             if self.p_scaling:
                 H_prev = self._activation_fn(Z) * np.sqrt(self.activation_scale_)
                 H_prev = H_prev / np.sqrt(hidden_layer_sizes[0])
+                if len(hidden_layer_sizes) > 1:
+                    raise NotImplementedError("If implementing deep scaled RVFL,"
+                                              "modify the above logic.")
+
             else:
                 H_prev = self._activation_fn(Z) * np.sqrt(self.activation_scale_)
             Hs.append(H_prev)
