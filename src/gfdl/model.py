@@ -35,8 +35,8 @@ class GFDL(BaseEstimator):
         reg_alpha: float = None,
         rtol: float | None = None,
         p_scaling: bool = False,
-        activation_scale: float = None,
-        direct_links_scale: float = None
+        activation_scale: float | None = None,
+        direct_links_scale: float | None = None
     ):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.activation = activation
@@ -112,7 +112,7 @@ class GFDL(BaseEstimator):
         # hypothesis space shape: (n_layers,)
         Hs = []
         H_prev = X
-        # If self.pscaling, then the below loop should run at most once.
+        # If self.p_scaling, then the below loop should run at most once.
         for w, b in zip(self.W_, self.b_, strict=False):
             Z = H_prev @ w.T + b  # (n_samples, n_hidden)
             if self.p_scaling:
@@ -276,10 +276,9 @@ class GFDL(BaseEstimator):
         hidden_layer_sizes = np.asarray(self.hidden_layer_sizes)
         Hs = []
         H_prev = X
-
         for W, b in zip(self.W_, self.b_, strict=False):
             Z = H_prev @ W.T + b  # (n, m)
-            # (implementation) if p_scaling,
+            # Current implementation: if p_scaling,
             # then the network has only one hidden layer, so the loop runs only once.
             if self.p_scaling:
                 H_prev = self._activation_fn(Z) * np.sqrt(self.activation_scale_)
@@ -401,11 +400,11 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         for single-layer RVFLs or ELMs.
 
     activation_scale : float, default=1.0
-        The activation function is multiplied by the square root of activation_scaling.
+        The activation function is multiplied by the square root of activation_scale.
 
     direct_links_scale : float, default=1.0
         The direct links terms of the design matrix are multiplied by a factor of
-        the square root of direct_links_scaling. Does nothing if direct_links is
+        the square root of direct_links_scale. Does nothing if direct_links is
         set to False.
 
     Attributes
@@ -455,8 +454,8 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         reg_alpha: float = None,
         rtol: float = None,
         p_scaling: bool = False,
-        activation_scale: float = None,
-        direct_links_scale: float = None
+        activation_scale: float | None = None,
+        direct_links_scale: float | None = None
     ):
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,
                          activation=activation,

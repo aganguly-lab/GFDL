@@ -921,7 +921,6 @@ def test_scaling_classifier(p_scaling,
                             random_state):
     # Establishes baseline acc/roc values for scaled GFDLs
 
-    # Use the digits data set
     data = load_digits()
     X, y = data.data, data.target
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
