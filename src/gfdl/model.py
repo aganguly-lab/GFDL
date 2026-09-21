@@ -280,7 +280,7 @@ class GFDL(BaseEstimator):
             if self.p_scaling:
                 H_prev = self._activation_fn(Z) * np.sqrt(self.activation_scale_)
                 H_prev = H_prev / np.sqrt(hidden_layer_sizes[0])
-                if len(hidden_layer_sizes) > 1:
+                if len(hidden_layer_sizes) > 1:  # pragma: no cover
                     raise NotImplementedError("If implementing deep scaled RVFL,"
                                               "modify the above logic.")
 
