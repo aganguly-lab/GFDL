@@ -249,6 +249,7 @@ def test_preserve_class_inputs():
     actual = model.get_params()
     expected = {"activation": "identity",
                 "direct_links": True,
+                "bias": True,
                 "hidden_layer_sizes": (100,),
                 "reg_alpha": None,
                 "rtol": None,
