@@ -31,6 +31,7 @@ class GFDL(BaseEstimator):
         activation: str = "identity",
         weight_scheme: str = "uniform",
         direct_links: bool = True,
+        bias: bool = True,
         seed: int | None = None,
         reg_alpha: float | None = None,
         rtol: float | None = None,
@@ -38,6 +39,7 @@ class GFDL(BaseEstimator):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.activation = activation
         self.direct_links = direct_links
+        self.bias = bias
         self.seed = seed
         self.weight_scheme = weight_scheme
         self.reg_alpha = reg_alpha
@@ -57,6 +59,10 @@ class GFDL(BaseEstimator):
         self._activation_fn = fn
         self._N = X.shape[1]
         self._weight_mode = resolve_weight(self.weight_scheme)
+        if self.bias:
+            self._b_weight_mode = resolve_weight(self.weight_scheme)
+        else:
+            self._b_weight_mode = resolve_weight("zeros")
 
         # weights shape: (n_layers,)
         # biases shape: (n_layers,)
@@ -70,7 +76,7 @@ class GFDL(BaseEstimator):
                 )
             )
         self.b_.append(
-            self._weight_mode(1, hidden_layer_sizes[0], rng=rng)
+            self._b_weight_mode(1, hidden_layer_sizes[0], rng=rng)
             .reshape(-1)
             )
         for i, layer in enumerate(hidden_layer_sizes[1:]):
@@ -80,13 +86,14 @@ class GFDL(BaseEstimator):
                 )
             # (n_hidden,)
             self.b_.append(
-                self._weight_mode(1, layer, rng=rng,).reshape(-1)
+                self._b_weight_mode(1, layer, rng=rng,).reshape(-1)
                 )
 
         # hypothesis space shape: (n_layers,)
         Hs = []
         H_prev = X
         for w, b in zip(self.W_, self.b_, strict=False):
+            # If not self.bias, then b is an array of zeroes
             Z = H_prev @ w.T + b  # (n_samples, n_hidden)
             H_prev = self._activation_fn(Z)
             Hs.append(H_prev)
@@ -146,6 +153,10 @@ class GFDL(BaseEstimator):
             self._N = X.shape[1]
             hidden_layer_sizes = np.asarray(self.hidden_layer_sizes)
             self._weight_mode = resolve_weight(self.weight_scheme)
+            if self.bias:
+                self._b_weight_mode = resolve_weight(self.weight_scheme)
+            else:
+                self._b_weight_mode = resolve_weight("zeros")
 
             # weights shape: (n_layers,)
             # biases shape: (n_layers,)
@@ -321,6 +332,10 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         When set to False, only the hidden-layer activations are used, corresponding
         to the Extreme Learning Machine (ELM) architecture.
 
+    bias : bool, default=True
+        Whether to include a bias term in the the hidden layers. If false, sets bias
+        to zero.
+
     seed : int, RandomState instance, default=None
         Determines random number generation for weights and bias
         initialization.
@@ -381,6 +396,7 @@ class GFDLClassifier(ClassifierMixin, GFDL):
         activation: str = "identity",
         weight_scheme: str = "uniform",
         direct_links: bool = True,
+        bias: bool = True,
         seed: int | None = None,
         reg_alpha: float | None = None,
         rtol: float | None = None
@@ -389,6 +405,7 @@ class GFDLClassifier(ClassifierMixin, GFDL):
                        activation=activation,
                        weight_scheme=weight_scheme,
                        direct_links=direct_links,
+                       bias=bias,
                        seed=seed,
                        reg_alpha=reg_alpha,
                        rtol=rtol)
@@ -546,6 +563,7 @@ class EnsembleGFDL(BaseEstimator):
         hidden_layer_sizes: np.typing.ArrayLike = (100,),
         activation: str = "identity",
         weight_scheme: str = "uniform",
+        bias: bool = True,
         seed: int | None = None,
         reg_alpha: float | None = None,
         rtol: float | None = None,
@@ -553,6 +571,7 @@ class EnsembleGFDL(BaseEstimator):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.activation = activation
         self.weight_scheme = weight_scheme
+        self.bias = bias
         self.seed = seed
         self.reg_alpha = reg_alpha
         self.rtol = rtol
@@ -573,6 +592,10 @@ class EnsembleGFDL(BaseEstimator):
         self._activation_fn = fn
         self._N = X.shape[1]
         self._weight_mode = resolve_weight(self.weight_scheme)
+        if self.bias:
+            self._b_weight_mode = resolve_weight(self.weight_scheme)
+        else:
+            self._b_weight_mode = resolve_weight("zeros")
 
         self.W_ = []
         self.b_ = []
@@ -584,7 +607,7 @@ class EnsembleGFDL(BaseEstimator):
                 )
             )
         self.b_.append(
-            self._weight_mode(1, hidden_layer_sizes[0], rng=rng)
+            self._b_weight_mode(1, hidden_layer_sizes[0], rng=rng)
             .reshape(-1)
             )
 
@@ -595,7 +618,7 @@ class EnsembleGFDL(BaseEstimator):
                 )
             # (n_hidden,)
             self.b_.append(
-                self._weight_mode(1, layer, rng=rng,).reshape(-1)
+                self._b_weight_mode(1, layer, rng=rng,).reshape(-1)
                 )
 
         self.coeffs_ = []
@@ -634,6 +657,10 @@ class EnsembleGFDL(BaseEstimator):
             self._N = X.shape[1]
             hidden_layer_sizes = np.asarray(self.hidden_layer_sizes)
             self._weight_mode = resolve_weight(self.weight_scheme)
+            if self.bias:
+                self._b_weight_mode = resolve_weight(self.weight_scheme)
+            else:
+                self._b_weight_mode = resolve_weight("zeros")
 
             self.W_ = []
             self.b_ = []
@@ -645,7 +672,7 @@ class EnsembleGFDL(BaseEstimator):
                     )
                 )
             self.b_.append(
-                self._weight_mode(1, hidden_layer_sizes[0], rng=rng)
+                self._b_weight_mode(1, hidden_layer_sizes[0], rng=rng)
                 .reshape(-1)
                 )
 
@@ -656,7 +683,7 @@ class EnsembleGFDL(BaseEstimator):
                     )
                 # (n_hidden,)
                 self.b_.append(
-                    self._weight_mode(1, layer, rng=rng,).reshape(-1)
+                    self._b_weight_mode(1, layer, rng=rng,).reshape(-1)
                     )
 
         self.coeffs_ = []
@@ -799,6 +826,10 @@ class EnsembleGFDLClassifier(ClassifierMixin, EnsembleGFDL):
         - 'glorot_normal': Glorot normal distribution
           (:func:`glorot_normal <gfdl.weights.glorot_normal>`).
 
+    bias : bool, default=True
+      Whether to include a bias term in the the hidden layers. If false, sets bias
+      to zero.
+
     seed : int, default=`None`
       Random seed used to initialize the network.
 
@@ -844,6 +875,7 @@ class EnsembleGFDLClassifier(ClassifierMixin, EnsembleGFDL):
         hidden_layer_sizes: np.typing.ArrayLike = (100,),
         activation: str = "identity",
         weight_scheme: str = "uniform",
+        bias: bool = True,
         seed: int | None = None,
         reg_alpha: float | None = None,
         rtol: float | None = None,
@@ -852,6 +884,7 @@ class EnsembleGFDLClassifier(ClassifierMixin, EnsembleGFDL):
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,
                          activation=activation,
                          weight_scheme=weight_scheme,
+                         bias=bias,
                          seed=seed,
                          reg_alpha=reg_alpha,
                          rtol=rtol
@@ -1107,6 +1140,10 @@ class GFDLRegressor(RegressorMixin, MultiOutputMixin, GFDL):
         When set to False, only the hidden-layer activations are used, corresponding
         to the Extreme Learning Machine (ELM) architecture.
 
+    bias : bool, default=True
+        Whether to include a bias term in the the hidden layers. If false, sets bias
+        to zero.
+
     seed : int, RandomState instance, default=None
         Determines random number generation for weights and bias
         initialization.
@@ -1164,6 +1201,7 @@ class GFDLRegressor(RegressorMixin, MultiOutputMixin, GFDL):
         activation: str = "identity",
         weight_scheme: str = "uniform",
         direct_links: bool = True,
+        bias: bool = True,
         seed: int | None = None,
         reg_alpha: float | None = None,
         rtol: float | None = None,
@@ -1172,6 +1210,7 @@ class GFDLRegressor(RegressorMixin, MultiOutputMixin, GFDL):
                        activation=activation,
                        weight_scheme=weight_scheme,
                        direct_links=direct_links,
+                       bias=bias,
                        seed=seed,
                        reg_alpha=reg_alpha,
                        rtol=rtol)
